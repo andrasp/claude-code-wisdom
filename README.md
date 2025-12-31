@@ -13,9 +13,9 @@ cp CLAUDE.md ~/.claude/CLAUDE.md
 ln -s "$(pwd)/CLAUDE.md" ~/.claude/CLAUDE.md
 ```
 
-**Option B: Link from existing config** - Add to your existing `~/.claude/CLAUDE.md`:
+**Option B: Import from existing config** - Add to your existing `~/.claude/CLAUDE.md`:
 ```markdown
-Also read: /path/to/this/repo/CLAUDE.md
+@/path/to/this/repo/CLAUDE.md
 ```
 
 ## The Wisdom
