@@ -159,3 +159,92 @@ Prefer explicit names over inline values. `DEBOUNCE_MS` is better than `300`.
 ## Git Operations
 
 - Do not perform git staging, un-staging, committing, pushing, or deleting unless you have verified permission from the user.
+
+## Effective Tool Usage
+
+### Hierarchical Exploration
+
+- **Context is finite and must be managed deliberately.** A 200K token window can't hold a production codebase. A single large file might be 10K tokens; loading files directly fills context with raw code, leaving less room for reasoning. When context becomes saturated with file dumps and debug output, quality degrades.
+
+- **Use hierarchical abstraction to compress information.** Don't load raw code into your main session. Build layers of abstraction, each compressing the layer below:
+  ```
+  Raw Codebase (millions of lines)     → 100% of information
+           ↓
+  File Summaries & Dependency Maps     → ~5%
+           ↓
+  Architectural Understanding          → ~0.5%
+           ↓
+  Task-Specific Decision               → ~0.05%
+  ```
+  Each layer filters ruthlessly. A million lines of code becomes a few thousand tokens of relevant context.
+
+- **Your main session is an orchestrator, not a workhorse.** Reading 15 files directly costs ~80K tokens. Subagents reading those same files and returning summaries costs ~5K tokens in your main session. Delegate the heavy reading.
+
+- **Use parallel subagents for exploration, then synthesize:**
+  ```
+  Level 1: Parallel exploration subagents
+  ├── Subagent A: Explore auth module → returns summary
+  ├── Subagent B: Explore API routes → returns summary
+  ├── Subagent C: Explore data layer → returns summary
+  └── Subagent D: Explore UI components → returns summary
+
+  Level 2: Synthesis subagents (if needed)
+  ├── Subagent E: Combine A + B findings → architectural summary
+  └── Subagent F: Combine C + D findings → data flow summary
+
+  Level 3: Final synthesis
+  └── Main session: Integrate all summaries into coherent understanding
+  ```
+
+- **When to use hierarchical exploration:**
+  - Codebase has many files across multiple modules
+  - You need to understand patterns across different areas
+  - Direct file reading would consume too much context
+
+- **How to delegate effectively:**
+  - Use Task or Explore agents for heavy reading
+  - Give each agent a focused scope (one module, one concern)
+  - Request summaries, not raw file dumps
+  - Run independent explorations in parallel
+  - If context matters, include relevant plan details in the prompt or instruct the agent to read plan.md
+
+### Delegating Verbose Operations
+
+- **Delegate anything that produces verbose output.** Running tests, analyzing logs, searching across many files, reviewing build output—these belong in subagents that return summaries, not raw dumps.
+
+- **The principle:** If raw output would be thousands of tokens but actionable information fits in a structured summary, delegate it.
+
+- **What a good summary includes:**
+
+  **Test runs:**
+  - Overall pass/fail counts
+  - Each failing test: name, file location, assertion that failed
+  - Error messages (deduplicated if repeated)
+  - Patterns observed ("all failures involve database connections")
+  - Enough detail to fix or know exactly where to look next
+
+  **Log analysis:**
+  - Error types and frequencies
+  - Specific error messages (deduplicated)
+  - Time patterns (when errors started, frequency, ongoing vs resolved)
+  - Affected services/components
+  - Correlations or likely root causes
+
+  **Code search:**
+  - Where the pattern appears (files, functions, line numbers)
+  - How it's used in each context
+  - Usage patterns ("mostly in controllers, some in tests")
+  - Anything unusual worth noting
+  - Enough to act without re-searching
+
+  **Build errors:**
+  - Each error with file:line and the actual message
+  - What each error means / likely cause
+  - Dependencies between errors ("fixing #1 may resolve #2-4")
+
+- **What to tell the subagent:**
+  - Run the operation
+  - Analyze the results
+  - Return: what happened, what failed, what patterns emerged
+  - Include specific locations/names needed for follow-up
+  - Omit the raw output unless explicitly asked
