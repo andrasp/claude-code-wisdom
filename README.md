@@ -1,5 +1,7 @@
 # Claude Code Wisdom
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Distilled software engineering wisdom in a Claude-consumable format. These guidelines represent lessons learned from my experience across a career spanning computational algorithms, systems programming, machine learning, and large-scale distributed systems at major tech companies.
 
 ## Usage
